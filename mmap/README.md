@@ -1,7 +1,7 @@
 # MMAP
 
 ## What is mmap ?
-Instead of reading a file into RAM and keeping a copy, mmap lets you treat the file like part of your program’s memory, leveraging the OS’s paging mechanism: only the accessed pages are loaded into physical memory. Only usable in UNIX based OS.
+Instead of reading a file into RAM and keeping a copy, mmap lets you treat the file like part of your program’s memory, leveraging the OS’s paging mechanism: only the accessed pages are loaded into physical memory. Only usable in UNIX based OS. mmap is just a slice of bytes.
 
 ## Advantages:
     - https://www.tencentcloud.com/techpedia/106444
@@ -30,3 +30,9 @@ Instead of reading a file into RAM and keeping a copy, mmap lets you treat the f
     - https://medium.com/%40jyjimmylee/how-does-memory-mapping-mmap-work-c8a6a550ba0d
     - https://stackoverflow.com/questions/258091/when-should-i-use-mmap-for-file-access
     - https://medium.com/cosmos-code/mmap-vs-read-a-performance-comparison-for-efficient-file-access-3e5337bd1e25
+
+## Install package
+    go get github.com/tysonmote/gommap
+
+## Memory usages of os.File
+    For a 10GB file, os.File will store some information about that file (some bytes), when we try to read from this file then it will use memory. 
