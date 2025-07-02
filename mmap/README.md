@@ -1,9 +1,9 @@
 # MMAP
 
-What is mmap ?
+## What is mmap ?
 Instead of reading a file into RAM and keeping a copy, mmap lets you treat the file like part of your program’s memory, leveraging the OS’s paging mechanism: only the accessed pages are loaded into physical memory. Only usable in UNIX based OS.
 
-Advantages:
+## Advantages:
     - https://www.tencentcloud.com/techpedia/106444
     - Saves ram
     - Loads a specific parts
@@ -12,17 +12,17 @@ Advantages:
     - Update data in memory and it's saved to disk automatically by using flushing
     - Multiple process can map the same file and share data
 
-Application:
+## Application:
     - huge files (logs, indexes, databases)
     - shared memory communication
 
-Implementation Idea:
+## Implementation Idea:
     - autocomplete from millions of keywords
     - persistent key-value store (modern databases uses this mechanism)
     - process a 10gb log file
     - memory allocator that uses disk-based memory
 
-Resources:
+## Resources:
     - https://en.wikipedia.org/wiki/Memory-mapped_file
     - https://www.tutorialspoint.com/unix_system_calls/mmap.htm
     - https://kuafu1994.github.io/MoreOnMemory/shared-memory.html
