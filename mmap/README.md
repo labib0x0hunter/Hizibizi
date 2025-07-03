@@ -4,13 +4,12 @@
 Instead of reading a file into RAM and keeping a copy, mmap lets you treat the file like part of your program’s memory, leveraging the OS’s paging mechanism: only the accessed pages are loaded into physical memory. Only usable in UNIX based OS. mmap is just a slice of bytes.
 
 ## Advantages:
-    - https://www.tencentcloud.com/techpedia/106444
-    - Saves ram
-    - Loads a specific parts
-    - No read(), write() syscall, directly accessing memory allowing fast read and writing. 
-        check  https://learningdaily.dev/reading-and-writing-files-using-memory-mapped-i-o-220fa802aa1c
-    - Update data in memory and it's saved to disk automatically by using flushing
-    - Multiple process can map the same file and share data
+- https://www.tencentcloud.com/techpedia/106444
+- Saves ram
+- Loads a specific parts
+- No read(), write() syscall, directly accessing memory allowing fast read and writing. check  https://learningdaily.dev/reading-and-writing-files-using-memory-mapped-i-o-220fa802aa1c
+- Update data in memory and it's saved to disk automatically by using flushing
+- Multiple process can map the same file and share data
 
 ## Application:
     - huge files (logs, indexes, databases)
@@ -35,4 +34,4 @@ Instead of reading a file into RAM and keeping a copy, mmap lets you treat the f
     go get github.com/tysonmote/gommap
 
 ## Memory usages of os.File
-    For a 10GB file, os.File will store some information about that file (some bytes), when we try to read from this file then it will use memory. 
+For a 10GB file, os.File will store some information about that file (some bytes), when we try to read from this file then it will use memory. 
