@@ -8,18 +8,20 @@ import (
 	"github.com/tysonmote/gommap"
 )
 
-// We will store only integer.
+// This program demonstrates how to persist and read fixed-size (8 bytes) uint64 integers
+// using memory-mapped files for high-performance I/O and minimal memory overhead.
 
-var encoder = binary.BigEndian // byte order for encoding
+var encoder = binary.BigEndian // consistent byte order(Big Endian) for binary encoding
 
 type Index struct {
 	file      *os.File    // file metadata and descriptor
-	mmap      gommap.MMap // memory-mapped file
+	mmap      gommap.MMap // memory-mapped view of the file as []byte
 	len       uint64      // current filesize
-	entrySize uint64      // we will store uint64 only, which is 8byte
-	maxSize   uint64
+	entrySize uint64      // each entry is uint64 (8 bytes)
+	maxSize   uint64      // maximum filesize
 }
 
+// NewIndex creates and memory-maps the file with given filename and maxSize.
 func NewIndex(filename string, maxSize int64) *Index {
 	// Open file
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0644)
@@ -34,13 +36,13 @@ func NewIndex(filename string, maxSize int64) *Index {
 		return nil
 	}
 
-	// Truncate to max size
+	// Expand file to max size
 	if err := file.Truncate(maxSize); err != nil {
 		file.Close()
 		return nil
 	}
 
-	// mmap the file
+	// mmap the file with read/write access, shared among processes
 	mmap, err := gommap.Map(
 		file.Fd(),                          // File descriptor of the file
 		gommap.PROT_READ|gommap.PROT_WRITE, // Memory protection (read & write access)
@@ -60,7 +62,7 @@ func NewIndex(filename string, maxSize int64) *Index {
 	}
 }
 
-// read the number which is stored in offset
+// ReadAt reads a uint64 integer from the given byte offset.
 func (i *Index) ReadAt(offset uint64) (uint64, error) {
 	if offset+i.entrySize > i.maxSize {
 		return 0, fmt.Errorf("Overflow")
@@ -69,7 +71,8 @@ func (i *Index) ReadAt(offset uint64) (uint64, error) {
 	return num, nil
 }
 
-// write an number at offset
+// WriteAt writes a uint64 integer to the given byte offset.
+// It updates the logical size if appending new data.
 func (i *Index) WriteAt(offset, num uint64) error {
 	if offset+i.entrySize > i.maxSize {
 		return fmt.Errorf("Overflow")
@@ -77,35 +80,36 @@ func (i *Index) WriteAt(offset, num uint64) error {
 	encoder.PutUint64(i.mmap[offset:offset+i.entrySize], num)
 
 	// For only appending, we will update the len
-	// For overriding, the len remains same
+	// For overwriting, the len remains same
 	if offset >= i.len {
 		i.len += i.entrySize
 	}
 	return nil
 }
 
-// close the mapped file
+// Close flushes changes, unmaps memory, truncates unused file space, and closes the file.
 func (i *Index) Close() error {
-	// ensure data leaves mmap and goes to file cache
+	// sync mmap to file cache
 	if err := i.mmap.Sync(gommap.MS_SYNC); err != nil {
 		return err
 	}
-	// ensure data reaches disk
+	// ensure file cache is flushed to disk
 	if err := i.file.Sync(); err != nil {
 		return err
 	}
-	// resize file to current size
+	// shrink file to current size
 	if err := i.file.Truncate(int64(i.len)); err != nil {
 		return err
 	}
+	// ensure file cache is flushed to disk
 	if err := i.file.Sync(); err != nil {
 		return err
 	}
-	// release the memory
+	// unmap memory
 	if err := i.mmap.UnsafeUnmap(); err != nil {
 		return err
 	}
-	// close the file
+	// close file
 	if err := i.file.Close(); err != nil {
 		return err
 	}
@@ -114,23 +118,27 @@ func (i *Index) Close() error {
 
 func main() {
 	filename := "integer.index"
-	maxFileSize := 10 * 1024
-	store := NewIndex(filename, int64(maxFileSize)) // 10kb
+	maxFileSize := 10 * 1024 // 10kb
+	
+	store := NewIndex(filename, int64(maxFileSize))
 	if store == nil {
 		return
 	}
 	defer store.Close()
 
-	store.WriteAt(0, 10)  // [0:8]
-	store.WriteAt(8, 20)  // [8:16]
-	store.WriteAt(16, 34) // [16:24]
+	// Write at given offset.
+	// offset must be a multiplier of 8, beacuse each uint64 will allocate 8 bytes.
+	store.WriteAt(0, 10)  // mmap[0 : 8] = 10
+	store.WriteAt(8, 20)  // mmap[8 : 16] = 20
+	store.WriteAt(16, 34) // mmap[16 : 24] = 34
 
-	//
+	// Read from a given offset
 	num, _ := store.ReadAt(0)
 	fmt.Println(num, "stored at offset 0")
 
 	num, _ = store.ReadAt(16)
 	fmt.Println(num, "stored at offset 16")
 
+	// Remove file if you dont want to use later
 	os.Remove(filename)
 }
