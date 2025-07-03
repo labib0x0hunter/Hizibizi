@@ -41,7 +41,11 @@ func NewIndex(filename string, maxSize int64) *Index {
 	}
 
 	// mmap the file
-	mmap, err := gommap.Map(file.Fd(), gommap.PROT_READ|gommap.PROT_WRITE, gommap.MAP_SHARED)
+	mmap, err := gommap.Map(
+		file.Fd(),                          // File descriptor of the file
+		gommap.PROT_READ|gommap.PROT_WRITE, // Memory protection (read & write access)
+		gommap.MAP_SHARED,                  // Mapping mode (shared memory between processes), used for persistency
+	)
 	if err != nil {
 		file.Close()
 		return nil
