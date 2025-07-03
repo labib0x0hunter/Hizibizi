@@ -4,7 +4,7 @@
 Instead of reading a file into RAM and keeping a copy, mmap lets you treat the file like part of your program’s memory, leveraging the OS’s paging mechanism: only the accessed pages are loaded into physical memory. Only usable in UNIX based OS. mmap is just a slice of bytes.
 
 ## Advantages:
-- https://www.tencentcloud.com/techpedia/106444
+- (Advantages) [https://www.tencentcloud.com/techpedia/106444]
 - Saves ram
 - Loads a specific parts
 - No read(), write() syscall, directly accessing memory allowing fast read and writing. check  https://learningdaily.dev/reading-and-writing-files-using-memory-mapped-i-o-220fa802aa1c
