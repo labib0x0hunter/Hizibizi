@@ -24,6 +24,7 @@ Instead of reading a file into RAM and keeping a copy, mmap lets you treat the f
 - https://medium.com/%40jyjimmylee/how-does-memory-mapping-mmap-work-c8a6a550ba0d
 - https://stackoverflow.com/questions/258091/when-should-i-use-mmap-for-file-access
 - https://medium.com/cosmos-code/mmap-vs-read-a-performance-comparison-for-efficient-file-access-3e5337bd1e25
+- [Byte Order](https://betterexplained.com/articles/understanding-big-and-little-endian-byte-order/)
 
 ## Install package
     go get github.com/tysonmote/gommap
