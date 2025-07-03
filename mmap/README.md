@@ -49,7 +49,7 @@ offset += len(s)    // advance offset by 5
 
 // store a int
 num := uint32(34)   // 4bytes
-binary.BigEndian.PutUint32(mmap[offset: offset + 4], num)   // encode num into []byte
+binary.BigEndian.PutUint32(mmap[offset: offset + 4], num)   // encode num into []byte and store 
 
 // retrive string
 data := mmap[0: len(s)] // we stored string at offset 0
