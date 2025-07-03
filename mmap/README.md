@@ -36,5 +36,26 @@ For a 10GB file, os.File will store some information about that file (some bytes
 mmap, err := gommap.Map(file.Fd(), gommap.PROT_READ|gommap.PROT_WRITE, gommap.MAP_SHARED)
 
 // mmap is a []byte
-// So, mapping a 15bytes sized file, mmap[offset] will be one byte. Think of it like, a slice of bytes with len of 15 and offset like index
+// So, mapping a 15-byte sized file, mmap[offset] is one byte.
+// Visualize mmap as, a slice of bytes with len 15 and offset = index
+
+
+// store a string
+offset := 0
+s := []byte("hello")
+copy(mmap[offset: offset + len(s)], s)
+offset += len(s)    // advance offset by 5
+
+// store a int
+num := uint32(34)   // 4bytes
+binary.BigEndian.PutUint32(mmap[offset: offset + 4], num)   // encode num into []byte
+
+// retrive string
+data := mmap[0: len(s)] // we stored string at offset 0
+fmt.Println(string(data))
+
+// retrive int
+storedNum := binary.BigEndian.Uint32(mmap[offset: offset + 4])
+fmt.Println(storedNum)
 ```
+
