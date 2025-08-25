@@ -12,3 +12,4 @@ go run main.go ContestRange_startId ContestRange_endId keyword1, keyword2, ... ,
 
 ## To - Do
  - Add some features, add concurrent fetcher or maybe a database
+ - Use channel
