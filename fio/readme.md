@@ -1,13 +1,13 @@
 # fio package - clone of fmt package
 ---
 Supports only int, string, struct for minimalist
----------------------
-| Verb    | Type    |
----------------------
-|   %s    | String  |
-|   %d    | Int     |
-|   %S    | Struct  |
-----------------------
+
+| Verb | Type   |
+|------|--------|
+| %s   | String |
+| %d   | Int    |
+| %S   | Struct |
+
 ---
 Usage :
 ```go
