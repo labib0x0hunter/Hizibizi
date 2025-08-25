@@ -47,5 +47,5 @@ func Write(format string, v ...interface{}) (int, error) {
 }
 
 func main() {
-	Write("", "HELLO WORLD\n")
+	Write("", "HELLO WORLD!\n")
 }
