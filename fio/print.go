@@ -25,13 +25,10 @@ func (b *buffer) appendByte(s byte) {
 
 type worker struct {
 	buf buffer
-	err error
 }
 
 func newWorker() *worker {
-	return &worker{
-		err: nil,
-	}
+	return &worker{}
 }
 
 func (w *worker) free() {
@@ -106,9 +103,15 @@ type A struct {
 	z int
 }
 
+type B struct {
+	a A
+	b string
+}
+
 func main() {
 	var i int = 10
 	j := A{b: "ABC", z: 100}
-	Write("Hello %s", "labib", i, j)
+	k := B{a: j, b: "HELLO"}
+	Write("Hello %s", "labib", i, j, k)
 	Write("\n")
 }
