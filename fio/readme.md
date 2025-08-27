@@ -2,13 +2,6 @@
 ---
 Supports only int, string, struct for minimalist
 
-| Verb | Type   |
-|------|--------|
-| %s   | String |
-| %b   | Binary |
-| %d   | Int    |
-| %S   | Struct |
-
 ---
 Usage :
 ```go
@@ -26,6 +19,21 @@ var bob user = user{
     Age : 12,
 }
 
+fio.Write(s, n, bob)
+fio.Fwrite(fio.Out, s, n, bob)
+```
+
+---
+To-do :
+
+| Verb | Type   |
+|------|--------|
+| %s   | String |
+| %b   | Binary |
+| %d   | Int    |
+| %S   | Struct |
+
+```go
 fio.Write("%s %d %S\n", s, n, bob)
 fio.Fwrite(fio.Out, "%s %d %S\n", s, n, bob)
 ```

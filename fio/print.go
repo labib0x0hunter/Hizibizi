@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strconv"
 )
 
 var In io.Reader = os.Stdin
@@ -39,24 +40,12 @@ func (w *worker) free() {
 }
 
 func (w *worker) formatInt(v reflect.Value) {
-	if v.Kind() != reflect.Int {
-		w.err = fmt.Errorf("int=%v", v)
-		return
-	}
+	var val int64 = v.Int()
+	w.buf.WriteString(strconv.Itoa(int(val)))
 }
 
 func (w *worker) formatString(v reflect.Value) {
-	if v.Kind() != reflect.String {
-		w.err = fmt.Errorf("string=%v", v)
-		return
-	}
-}
-
-func (w *worker) formatBinary(v reflect.Value) {
-	if v.Kind() != reflect.Int {
-		w.err = fmt.Errorf("int=%v", v)
-		return
-	}
+	w.buf.WriteString(v.String())
 }
 
 func (w *worker) formatStruct(v reflect.Value) {
@@ -67,6 +56,24 @@ func (w *worker) formatStruct(v reflect.Value) {
 }
 
 func (w *worker) processFormat(v ...interface{}) {
+	for idx, arg := range v {
+		vr := reflect.ValueOf(arg)
+		switch vr.Kind() {
+		case reflect.Int:
+			w.formatInt(vr)
+		case reflect.String:
+			w.formatString(vr)
+		case reflect.Struct:
+			w.formatStruct(vr)
+		default:
+			w.free()
+			w.buf.WriteString("unknown data type for")
+			return
+		}
+		if idx + 1 < len(v) {
+			w.buf.WriteByte(' ')
+		}
+	}
 }
 
 func Fwrite(w io.Writer, v ...interface{}) (n int, err error) {
@@ -82,7 +89,7 @@ func Write(v ...interface{}) (int, error) {
 }
 
 func main() {
-	Write("Hello %s", "labib")
-	fmt.Println()
-	fmt.Printf("%d", "ge")
+	var i int = 10
+	Write("Hello %s", "labib", i)
+	Write("\n")
 }
