@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
+	"reflect"
 )
 
 var In io.Reader = os.Stdin
@@ -13,39 +15,74 @@ type buffer struct {
 	bytes.Buffer
 }
 
-func (b *buffer) append(s string) {
+func (b *buffer) appendString(s string) {
 	b.WriteString(s)
+}
+
+func (b *buffer) appendByte(s byte) {
+	b.WriteByte(s)
 }
 
 type worker struct {
 	buf buffer
+	err error
+}
+
+func newWorker() *worker {
+	return &worker{
+		err: nil,
+	}
 }
 
 func (w *worker) free() {
 	w.buf.Reset()
 }
 
-func newWorker() *worker {
-	return &worker{}
+func (w *worker) formatInt(v reflect.Value) {
+	if v.Kind() != reflect.Int {
+		w.err = fmt.Errorf("int=%v", v)
+		return
+	}
 }
 
-func Fwrite(w io.Writer, format string, v ...interface{}) (n int, err error) {
-	wkr := newWorker()
-	for _, val := range v {
-		switch x := val.(type) {
-		case string:
-			wkr.buf.append(x)
-		}
+func (w *worker) formatString(v reflect.Value) {
+	if v.Kind() != reflect.String {
+		w.err = fmt.Errorf("string=%v", v)
+		return
 	}
+}
+
+func (w *worker) formatBinary(v reflect.Value) {
+	if v.Kind() != reflect.Int {
+		w.err = fmt.Errorf("int=%v", v)
+		return
+	}
+}
+
+func (w *worker) formatStruct(v reflect.Value) {
+	if v.Kind() != reflect.Struct {
+		w.err = fmt.Errorf("struct=%v", v)
+		return
+	}
+}
+
+func (w *worker) processFormat(v ...interface{}) {
+}
+
+func Fwrite(w io.Writer, v ...interface{}) (n int, err error) {
+	wkr := newWorker()
+	wkr.processFormat(v...)
 	n, err = w.Write(wkr.buf.Bytes())
 	wkr.free()
 	return
 }
 
-func Write(format string, v ...interface{}) (int, error) {
-	return Fwrite(Out, format, v...)
+func Write(v ...interface{}) (int, error) {
+	return Fwrite(Out, v...)
 }
 
 func main() {
-	Write("", "HELLO WORLD!\n")
+	Write("Hello %s", "labib")
+	fmt.Println()
+	fmt.Printf("%d", "ge")
 }

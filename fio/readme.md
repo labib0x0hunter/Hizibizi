@@ -5,6 +5,7 @@ Supports only int, string, struct for minimalist
 | Verb | Type   |
 |------|--------|
 | %s   | String |
+| %b   | Binary |
 | %d   | Int    |
 | %S   | Struct |
 
