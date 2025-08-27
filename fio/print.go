@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"reflect"
@@ -49,10 +48,24 @@ func (w *worker) formatString(v reflect.Value) {
 }
 
 func (w *worker) formatStruct(v reflect.Value) {
-	if v.Kind() != reflect.Struct {
-		w.err = fmt.Errorf("struct=%v", v)
-		return
+	w.buf.WriteString("{ ")
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		switch f.Kind() {
+		case reflect.Int:
+			w.formatInt(f)
+		case reflect.String:
+			w.formatString(f)
+		case reflect.Struct:
+			w.formatStruct(f)
+		default:
+			return
+		}
+		if i+1 < v.NumField() {
+			w.buf.WriteString(", ")
+		}
 	}
+	w.buf.WriteString(" }")
 }
 
 func (w *worker) processFormat(v ...interface{}) {
@@ -70,7 +83,7 @@ func (w *worker) processFormat(v ...interface{}) {
 			w.buf.WriteString("unknown data type for")
 			return
 		}
-		if idx + 1 < len(v) {
+		if idx+1 < len(v) {
 			w.buf.WriteByte(' ')
 		}
 	}
@@ -88,8 +101,14 @@ func Write(v ...interface{}) (int, error) {
 	return Fwrite(Out, v...)
 }
 
+type A struct {
+	b string
+	z int
+}
+
 func main() {
 	var i int = 10
-	Write("Hello %s", "labib", i)
+	j := A{b: "ABC", z: 100}
+	Write("Hello %s", "labib", i, j)
 	Write("\n")
 }

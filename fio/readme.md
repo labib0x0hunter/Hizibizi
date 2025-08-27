@@ -14,7 +14,7 @@ type user struct {
 
 var s string = "Hello"
 var n int = 12
-var bob user = user{
+var bob user = user {
     Name : "Bob",
     Age : 12,
 }
