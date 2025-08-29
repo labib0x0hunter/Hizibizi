@@ -1,26 +1,22 @@
 package main
 
 import (
-	"bytes"
 	"io"
-	"os"
 	"reflect"
-	"strconv"
 )
 
-var In io.Reader = os.Stdin
-var Out io.Writer = os.Stdout
-
-type buffer struct {
-	bytes.Buffer
-}
+type buffer []byte
 
 func (b *buffer) appendString(s string) {
-	b.WriteString(s)
+	*b = append(*b, s...)
+}
+
+func (b *buffer) appendBytes(s []byte) {
+	*b = append(*b, s...)
 }
 
 func (b *buffer) appendByte(s byte) {
-	b.WriteByte(s)
+	*b = append(*b, s)
 }
 
 type worker struct {
@@ -32,20 +28,29 @@ func newWorker() *worker {
 }
 
 func (w *worker) free() {
-	w.buf.Reset()
+	w.buf = buffer{}
 }
 
 func (w *worker) formatInt(v reflect.Value) {
 	var val int64 = v.Int()
-	w.buf.WriteString(strconv.Itoa(int(val)))
+	var inbuf [20]byte
+	i := len(inbuf)
+
+	for val > 0 {
+		i--
+		nxt := val / 10
+		inbuf[i] = byte('0' + val - nxt*10)
+		val = nxt
+	}
+	w.buf.appendBytes(inbuf[i:])
 }
 
 func (w *worker) formatString(v reflect.Value) {
-	w.buf.WriteString(v.String())
+	w.buf.appendString(v.String())
 }
 
 func (w *worker) formatStruct(v reflect.Value) {
-	w.buf.WriteString("{ ")
+	w.buf.appendString("{ ")
 	for i := 0; i < v.NumField(); i++ {
 		f := v.Field(i)
 		switch f.Kind() {
@@ -59,13 +64,13 @@ func (w *worker) formatStruct(v reflect.Value) {
 			return
 		}
 		if i+1 < v.NumField() {
-			w.buf.WriteString(", ")
+			w.buf.appendString(", ")
 		}
 	}
-	w.buf.WriteString(" }")
+	w.buf.appendString(" }")
 }
 
-func (w *worker) processFormat(v ...interface{}) {
+func (w *worker) processWrite(v ...interface{}) {
 	for idx, arg := range v {
 		vr := reflect.ValueOf(arg)
 		switch vr.Kind() {
@@ -77,19 +82,19 @@ func (w *worker) processFormat(v ...interface{}) {
 			w.formatStruct(vr)
 		default:
 			w.free()
-			w.buf.WriteString("unknown data type for")
+			w.buf.appendString("unknown data type for")
 			return
 		}
 		if idx+1 < len(v) {
-			w.buf.WriteByte(' ')
+			w.buf.appendByte(' ')
 		}
 	}
 }
 
 func Fwrite(w io.Writer, v ...interface{}) (n int, err error) {
 	wkr := newWorker()
-	wkr.processFormat(v...)
-	n, err = w.Write(wkr.buf.Bytes())
+	wkr.processWrite(v...)
+	n, err = w.Write(wkr.buf)
 	wkr.free()
 	return
 }
@@ -109,7 +114,7 @@ type B struct {
 }
 
 func main() {
-	var i int = 10
+	var i int = 102222
 	j := A{b: "ABC", z: 100}
 	k := B{a: j, b: "HELLO"}
 	Write("Hello %s", "labib", i, j, k)
