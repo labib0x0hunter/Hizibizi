@@ -2,37 +2,35 @@ package main
 
 import (
 	"io"
+	"os"
 	"reflect"
+	"sync"
 )
 
-type buffer []byte
-
-func (b *buffer) appendString(s string) {
-	*b = append(*b, s...)
-}
-
-func (b *buffer) appendBytes(s []byte) {
-	*b = append(*b, s...)
-}
-
-func (b *buffer) appendByte(s byte) {
-	*b = append(*b, s)
-}
-
-type worker struct {
+type writer struct {
 	buf buffer
 }
 
-func newWorker() *worker {
-	return &worker{}
+var workerPool = sync.Pool{
+	New: func() any {
+		return new(writer)
+	},
 }
 
-func (w *worker) free() {
-	w.buf = buffer{}
+func newWriter() *writer {
+	w := workerPool.Get().(*writer)
+	return w
 }
 
-func (w *worker) formatInt(v reflect.Value) {
-	var val int64 = v.Int()
+func (w *writer) free() {
+	w.buf.truncate()
+	workerPool.Put(w)
+}
+
+// formats int, digit by digit
+// append to buffer
+func (w *writer) formatInt(val int) {
+	// var val int64 = v.Int()
 	var inbuf [20]byte
 	i := len(inbuf)
 
@@ -45,22 +43,25 @@ func (w *worker) formatInt(v reflect.Value) {
 	w.buf.appendBytes(inbuf[i:])
 }
 
-func (w *worker) formatString(v reflect.Value) {
-	w.buf.appendString(v.String())
+// format string and append to buffer
+func (w *writer) formatString(v string) {
+	w.buf.appendString(v)
 }
 
-func (w *worker) formatStruct(v reflect.Value) {
+// format struct, and append to buffer
+func (w *writer) formatStruct(v reflect.Value) {
 	w.buf.appendString("{ ")
 	for i := 0; i < v.NumField(); i++ {
 		f := v.Field(i)
 		switch f.Kind() {
 		case reflect.Int:
-			w.formatInt(f)
+			w.formatInt(int(f.Int()))
 		case reflect.String:
-			w.formatString(f)
+			w.formatString(f.String())
 		case reflect.Struct:
 			w.formatStruct(f)
 		default:
+			w.buf.appendString(" %!unknown% ")
 			return
 		}
 		if i+1 < v.NumField() {
@@ -70,19 +71,20 @@ func (w *worker) formatStruct(v reflect.Value) {
 	w.buf.appendString(" }")
 }
 
-func (w *worker) processWrite(v ...interface{}) {
+// detect type by reflection, then format them
+// other than string, int and struct -> error
+func (w *writer) processWrite(v ...interface{}) {
 	for idx, arg := range v {
 		vr := reflect.ValueOf(arg)
 		switch vr.Kind() {
 		case reflect.Int:
-			w.formatInt(vr)
+			w.formatInt(int(vr.Int()))
 		case reflect.String:
-			w.formatString(vr)
+			w.formatString(vr.String())
 		case reflect.Struct:
 			w.formatStruct(vr)
 		default:
-			w.free()
-			w.buf.appendString("unknown data type for")
+			w.buf.appendString(" %!unknown% ")
 			return
 		}
 		if idx+1 < len(v) {
@@ -91,8 +93,9 @@ func (w *worker) processWrite(v ...interface{}) {
 	}
 }
 
+// Accepts an io.Writer and any arguments
 func Fwrite(w io.Writer, v ...interface{}) (n int, err error) {
-	wkr := newWorker()
+	wkr := newWriter()
 	wkr.processWrite(v...)
 	n, err = w.Write(wkr.buf)
 	wkr.free()
@@ -100,7 +103,7 @@ func Fwrite(w io.Writer, v ...interface{}) (n int, err error) {
 }
 
 func Write(v ...interface{}) (int, error) {
-	return Fwrite(Out, v...)
+	return Fwrite(os.Stdout, v...)
 }
 
 type A struct {
