@@ -1,0 +1,172 @@
+
+[labib: 7836576569750756973: 0-24: docId -> 1, 4, 5, 6]
+[al: 14166000208214906927: 24-48: docId -> 1, 2]
+[faisal: 6400750185981308762: 48-72: docId -> 1, 5, 6]
+[hacking: 5477696533448088004: 72-96: docId -> 3]
+[is: 340320110904293113: 96-120: docId -> 3, 4, 5, 6]
+[goood: 8196513302383872022: 120-144: docId -> 3]
+[hacker: 8713676797236502622: 144-168: docId -> 4, 6]
+[also: 9419610755468730395: 168-192: docId -> 6]
+
+
+Document:  labib al faisal , [docId:  1]
+token:  labib ,len:  5 , tokenHash:  7836576569750756973
+bytes written:  0
+bytes written:  8
+bytes written:  16
+bytes written:  24
+
+token:  al ,len:  2 , tokenHash:  14166000208214906927
+bytes written:  24
+bytes written:  32
+bytes written:  40
+bytes written:  48
+
+token:  faisal ,len:  6 , tokenHash:  6400750185981308762
+bytes written:  48
+bytes written:  56
+bytes written:  64
+bytes written:  72
+
+
+
+Document:   al  , [docId:  2]
+token:  al ,len:  2 , tokenHash:  14166000208214906927
+
+
+
+Document:  hacking is goood ,[ docId:  3]
+token:  hacking ,len:  7 , tokenHash:  5477696533448088004
+bytes written:  72
+bytes written:  80
+bytes written:  88
+bytes written:  96
+
+token:  is ,len:  2 , tokenHash:  340320110904293113
+bytes written:  96
+bytes written:  104
+bytes written:  112
+bytes written:  120
+
+token:  goood ,len:  5 , tokenHash:  8196513302383872022
+bytes written:  120
+bytes written:  128
+bytes written:  136
+bytes written:  144
+
+
+
+Document:  labib is hacker , [docId:  4]
+token:  labib ,len:  5 , tokenHash:  7836576569750756973
+token:  is ,len:  2 , tokenHash:  340320110904293113
+token:  hacker ,len:  6 , tokenHash:  8713676797236502622
+bytes written:  144
+bytes written:  152
+bytes written:  160
+bytes written:  168
+
+
+
+Document:  labib is faisal , [docId:  5]
+token:  labib ,len:  5 , tokenHash:  7836576569750756973
+token:  is ,len:  2 , tokenHash:  340320110904293113
+token:  faisal ,len:  6 , tokenHash:  6400750185981308762
+
+
+
+Document:  labib is faisal also hacker , [docId:  6]
+token:  labib ,len:  5 , tokenHash:  7836576569750756973
+token:  is ,len:  2 , tokenHash:  340320110904293113
+token:  faisal ,len:  6 , tokenHash:  6400750185981308762
+token:  also ,len:  4 , tokenHash:  9419610755468730395
+bytes written:  168
+bytes written:  176
+bytes written:  184
+bytes written:  192
+
+token:  hacker ,len:  6 , tokenHash:  8713676797236502622
+
+////////                ///////////                 ///////////////
+
+Document:  labib al faisal , docId:  1
+token:  labib
+ [index_repo.go]  ( 0 0 )
+post -> append:  0 8
+
+token:  al
+ [index_repo.go]  ( 0 0 )
+post -> append:  8 16
+
+token:  faisal
+ [index_repo.go]  ( 0 0 )
+post -> append:  16 24
+
+
+Document:   al  , docId:  2
+token:  al
+ [index_repo.go]  ( 8 1 )
+post -> update:  24 48
+
+
+Document:  hacking is goood , docId:  3
+token:  hacking
+ [index_repo.go]  ( 0 0 )
+post -> append:  48 56
+
+token:  is
+ [index_repo.go]  ( 0 0 )
+post -> append:  56 64
+
+token:  goood
+ [index_repo.go]  ( 0 0 )
+post -> append:  64 72
+
+
+Document:  labib is hacker , docId:  4
+token:  labib
+ [index_repo.go]  ( 0 1 )
+post -> update:  72 96
+
+token:  is
+ [index_repo.go]  ( 56 1 )
+post -> update:  96 120
+
+token:  hacker
+ [index_repo.go]  ( 0 0 )
+post -> append:  120 128
+
+
+Document:  labib is faisal , docId:  5
+token:  labib
+ [index_repo.go]  ( 72 2 )
+post -> update:  128 160
+
+token:  is
+ [index_repo.go]  ( 96 2 )
+post -> update:  160 192
+
+token:  faisal
+ [index_repo.go]  ( 16 1 )
+post -> update:  192 216
+
+
+Document:  labib is faisal also hacker , docId:  6
+token:  labib
+ [index_repo.go]  ( 128 3 )
+post -> update:  216 256
+
+token:  is
+ [index_repo.go]  ( 160 3 )
+post -> update:  256 296
+
+token:  faisal
+ [index_repo.go]  ( 192 2 )
+post -> update:  296 328
+
+token:  also
+ [index_repo.go]  ( 0 0 )
+post -> append:  328 336
+
+token:  hacker
+ [index_repo.go]  ( 120 1 )
+post -> update:  336 360

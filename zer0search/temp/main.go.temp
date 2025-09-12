@@ -1,0 +1,178 @@
+package main
+
+import (
+	"os"
+	"searchengine/db"
+
+	"github.com/gin-gonic/gin"
+)
+
+// What are the problems here ??
+// Poor Structure
+// Error handling is messy
+// Testing is messy
+// How to log, proper log write
+
+// The main function retrieves the current working directory, creates a memory mapper, loads a document
+// ID if it exists, tokenizes a message, and performs search and insert operations using the tokens.
+// func main() {
+
+	
+
+	// mapper, err := memorymapper.NewMapper(path)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer mapper.Close()
+
+	// reader := bufio.NewReader(os.Stdin)
+	// sigChan := make(chan os.Signal, 1)
+	// signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	// go func(newDb *db.DbService, mapper *memorymapper.Mapper) {
+	// 	sig := <-sigChan
+	// 	fmt.Println("Received: ", sig)
+	// 	mapper.Close()
+	// 	newDb.Close()
+	// 	os.Exit(0)
+	// }(newDb, mapper)
+
+	// for {
+
+	// fmt.Printf(" >>> ")
+	// cmd, err := reader.ReadString('\n')
+	// if err != nil {
+	// 	slog.Warn(err.Error())
+	// 	break
+	// }
+	// _ = cmd
+
+	// msg, err := reader.ReadString('\n')
+	// if err != nil {
+	// 	slog.Warn(err.Error())
+	// 	break
+	// 	// return
+	// }
+
+	// slog.Info("[INFO] main.go -> main()")
+
+	// msg = strings.TrimSpace(msg)
+	// cmd = strings.TrimSpace(cmd)
+
+	// token := tokenizer.GetTokens(msg, -1)
+
+	// 	// Search(&token, mapper, newDb)
+	// 	slog.Info("[INFO] main.go main() : cmd = ", cmd)
+
+	// 	if cmd == "search" {
+	// 		slog.Info("[INFO] main.go main() = cmd == search")
+	// 		documents := Search(&token, mapper, newDb)
+	// 		fmt.Println(documents)
+	// 	} else {
+	// 		docId, err := InsertDocument(&msg, newDb)
+	// 		if err != nil {
+	// 			slog.Warn("[ERROR] main.go main() -> InsertDocument(&msg, newDb) : " + err.Error())
+	// 			continue
+	// 			// break
+	// 		}
+	// 		token.DocId = docId
+	// 		Insert(&token, mapper, newDb)
+
+	// 		// IF insert is failed REMOVE FROM DATABASE
+	// 	}
+
+	// 	fmt.Println(token)
+	// }
+
+
+	// documents := []string{
+	// 	"labib al faisal",
+	// 	" al ",
+	// 	"hacking is goood",
+	// 	"labib is hacker",
+	// 	"labib is faisal",
+	// 	"labib is faisal also hacker",
+	// }
+
+	// for _, doc := range documents {
+	// 	fmt.Println()
+	// 	engineService.IndexDocument(doc)
+	// }
+
+// }
+
+// The `Search` function searches for documents based on tokens using a memory mapper and then
+// retrieves the documents from a MySQL database.
+// func Search(token *tokenizer.Token, mapper *memorymapper.Mapper, dbService *db.DbService) []string {
+// 	slog.Info("[INFO] main.go -> Search(token, mapper, dbService)")
+// 	foundDocIds := make(map[uint64]struct{})
+// 	for index, tok := range token.Tokens {
+// 		tempSlice, err := mapper.GetDocIds(tok)
+// 		if err != nil {
+// 			slog.Info("[ERROR] main.go -> Search(token, mapper, newDb) = " + "GetDocIds(tok) = " + err.Error())
+// 			continue
+// 		}
+// 		// AND operation (intersection) on tempSlice and foundDocIds
+// 		if index == 0 {
+// 			for _, docId := range tempSlice {
+// 				foundDocIds[docId] = struct{}{}
+// 			}
+// 			continue
+// 		}
+// 		commonDocId := make(map[uint64]struct{}, 0)
+// 		for _, docId := range tempSlice {
+// 			if _, ok := foundDocIds[docId]; ok {
+// 				commonDocId[docId] = struct{}{}
+// 			}
+// 		}
+// 		foundDocIds, commonDocId = commonDocId, foundDocIds
+// 	}
+
+
+
+// 	slog.Info("[INFO] main.go -> Search(token, mapper, newDb) = len(foundDocIds) :  " + strconv.Itoa(len(foundDocIds)))
+// 	result := make([]string, 0, len(foundDocIds))
+// 	for docId := range foundDocIds {
+// 		// Search from MySql
+// 		document, err := dbService.Query(int(docId))
+// 		if err != nil {
+// 			slog.Info("[ERROR] main.go -> Search(token, mapper, db) = " + err.Error())
+// 			continue
+// 		}
+// 		result = append(result, document)
+// 	}
+// 	slog.Info("[INFO] main.go -> Search(token, mapper, newDb) = " + "results are found")
+// 	return result
+// }
+
+// // The Insert function increments the document ID, updates the memory mapper with tokens
+// func Insert(token *tokenizer.Token, mapper *memorymapper.Mapper, dbService *db.DbService) {
+// 	slog.Info("[INFO] main.go -> Insert(token, mapper, dbService)")
+// 	var insertedFlag bool = false
+// 	for _, tok := range token.Tokens {
+// 		if err := mapper.Update(tok, token.DocId); err != nil {
+// 			slog.Info("[ERROR] main.go -> Insert(token, mapper, dbService) = " + err.Error())
+// 			continue
+// 		}
+// 		insertedFlag = true
+// 	}
+// 	if !insertedFlag {
+// 		// Remove document from sql
+// 	}
+// }
+
+// func InsertDocument(document *string, dbService *db.DbService) (int64, error) {
+// 	slog.Info("[INFO] main.go -> InsertDocument(token, dbService)")
+// 	if len(*document) == 0 {
+// 		return -1, errors.New("[ERROR] main.go -> InsertDocument(document, dbService) : document is empty string")
+// 	}
+// 	docId, err := dbService.Insert(*document)
+// 	if err == nil || err.Error() == db.InsertTempError {
+// 		return docId, nil
+// 	}
+// 	return -1, fmt.Errorf("[ERROR] main.go -> InsertDocument(document, dbService) = %v", err)
+// }
+
+// func DeleteDocument() {
+// 	slog.Info("[INFO] main.go -> Search(token, mapper, dbService)")
+
+// }

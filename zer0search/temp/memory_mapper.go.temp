@@ -1,0 +1,119 @@
+// package memorymapper
+
+// import (
+// 	"errors"
+// 	"fmt"
+// 	"log/slog"
+// 	"path/filepath"
+// 	"searchengine/utils"
+// )
+
+// type Mapper struct {
+// 	dict   *Dictionary
+// 	post   *Posting
+// 	hasher *utils.Hash
+// }
+
+// func NewMapper(path string) (*Mapper, error) {
+// 	slog.Info("[INSIDE] memory_mapper.go -> NewMapper(path) : " + path)
+
+// 	dict, err := NewDictionary(path)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	post, err := NewPosting(path)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	hasher, err := utils.NewHash(filepath.Join(path, "utils"))
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return &Mapper{
+// 		dict:   dict,
+// 		post:   post,
+// 		hasher: hasher,
+// 	}, nil
+// }
+
+// // search word in dictionary.index
+// // true : get docIds from posting.index, append new docId and update dictionary.index
+// // false : append docId in posting.index and append postingOffset in dictionary.index
+// func (m *Mapper) Update(word string, docId int64) error {
+// 	slog.Info("[INSIDE] memory_mapper.go -> Update(word, docID)")
+// 	wordHash := m.getHash(word)
+// 	found, offset, postingOffset, postingLen, err := m.dict.Search(wordHash)
+// 	slog.Info(fmt.Sprintf("[INFO] memory-mapper.go -> Update(word, docId) found: %v, offset: %v, postingOffset: %v, postingLen: %v, err: %v", found, offset, postingOffset, postingLen, err))
+// 	if err != nil {
+// 		return fmt.Errorf("[ERROR] memory-mapper.go -> Update(word, docId) -> dict.Search(wordHash) = %w", err)
+// 	}
+// 	if !found {
+// 		// HERE IS ERROR HAPPENING
+// 		// slog.Info("[INFO] memory-mapper.go -> Update(word, docId) -> post.Append(docId)")
+// 		postingOffset, err = m.post.Append(uint64(docId), true)
+// 		if err != nil {
+// 			return fmt.Errorf("[ERROR] memory-mapper.go -> Update(word, docId) -> post.Append(docId) = %w", err)
+// 		}
+// 		err = m.dict.Append(wordHash, postingOffset, uint64(1))
+// 		// slog.Info("[INFO] memory-mapper.go -> Update(word, docId) -> dict.Append(docId)")
+// 		if err != nil {
+// 			return fmt.Errorf("[ERROR] memory-mapper.go -> Update(word, docId) -> dict.Append(docId) = %w", err)
+// 		}
+// 		return nil
+// 	}
+
+// 	postingOffset, err = m.post.Update(postingOffset, postingLen, uint64(docId))
+// 	// slog.Info("[INFO] memory-mapper.go -> Update(word, docId) -> post.Update(postingOffset, postingLen, docId)")
+// 	if err != nil {
+// 		return fmt.Errorf("[ERROR] memory-mapper.go -> Update(word, docId) -> post.Update(postingOffset, postingLen, docId) = %w", err)
+// 	}
+
+// 	err = m.dict.Update(offset, postingOffset, postingLen+1)
+// 	// slog.Info("[INFO] memory-mapper.go -> Update(word, docId) -> dict.Update(offset, postingOffset, postingLen+1)")
+// 	if err != nil {
+// 		return fmt.Errorf("[ERROR] memory-mapper.go -> Update(word, docId) -> dict.Update(offset, postingOffset, postingLen+1) = %w", err)
+// 	}
+// 	return nil
+// }
+
+// // search word in dictionary.index
+// // get docIds from posting.index
+// func (m *Mapper) GetDocIds(word string) ([]uint64, error) {
+// 	slog.Info("[INSIDE] memory_mapper.go -> GetDocIds(word)")
+// 	wordHash := m.getHash(word)
+
+// 	slog.Info(fmt.Sprintf(" [INFO] GetDocIds(word) = word: %s, hash: %v", word, wordHash))
+
+// 	found, _, postingOffset, postingLen, err := m.dict.Search(wordHash)
+
+// 	slog.Info(fmt.Sprintf(" [INFO] GetDocIds(word) = found: %v, postingOffset: %v, postingLen: %v, err: %v", found, postingOffset, postingLen, err))
+
+// 	if err != nil {
+// 		return []uint64{}, err
+// 	}
+// 	if !found {
+// 		return []uint64{}, nil
+// 	}
+// 	return m.post.Search(postingOffset, postingLen)
+// }
+
+// // hash word
+// func (m *Mapper) getHash(word string) uint64 {
+// 	m.hasher.WriteString(word)
+// 	wordHash := m.hasher.Sum()
+// 	m.hasher.Reset()
+// 	return wordHash
+// }
+
+// // Close
+// func (m *Mapper) Close() error {
+// 	errDict := m.dict.Close()
+// 	errPost := m.post.Close()
+// 	if errDict != nil || errPost != nil {
+// 		return errors.New("[error] : " + errDict.Error() + " " + errPost.Error())
+// 	}
+// 	return nil
+// }

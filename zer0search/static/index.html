@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zer0 Search And Store</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 24px;
+            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 8s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-content {
+            padding: 40px 30px;
+        }
+
+        .section {
+            margin-bottom: 32px;
+            padding: 24px;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .section:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #1f2937;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-radius: 2px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+            font-family: inherit;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #4f46e5;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .textarea-field {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 32px rgba(79, 70, 229, 0.25);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #059669, #0d9488);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 16px 32px rgba(5, 150, 105, 0.25);
+        }
+
+        .api-status {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .api-status.connected {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .api-status.disconnected {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .results-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            background: #f9fafb;
+            margin-top: 20px;
+        }
+
+        .result-item {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            background: white;
+            margin: 8px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .result-item:hover {
+            background: #f0f9ff;
+            transform: translateX(4px);
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #1f2937;
+            word-break: break-word;
+        }
+
+        .result-meta {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+            transform: scale(1.05);
+        }
+
+        .status-message {
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 16px;
+            font-weight: 500;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .status-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .status-success {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(79, 70, 229, 0.2);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-label {
+            opacity: 0.9;
+            margin-top: 4px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Zre0 Search</h1>
+            <p>Simple document storage and search system</p>
+        </div>
+
+        <div class="main-content">
+            <!-- API Status -->
+            <div id="apiStatus" class="api-status disconnected">
+                🔴 Disconnected from API
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats">
+                <div class="stat-card">
+                    <span class="stat-number" id="totalDocs">0</span>
+                    <div class="stat-label">Total Documents</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="searchResults">0</span>
+                    <div class="stat-label">Search Results</div>
+                </div>
+            </div>
+
+            <!-- Store Document Section -->
+            <div class="section">
+                <h2 class="section-title">📝 Store Document</h2>
+                <div class="input-group">
+                    <label for="docContent">Document Content</label>
+                    <textarea id="docContent" class="input-field textarea-field" 
+                              placeholder="Enter your document content here..." required></textarea>
+                </div>
+                <button class="btn btn-secondary" onclick="storeDocument()">
+                    <span id="storeBtnText">💾 Store Document</span>
+                </button>
+                <div id="storeStatus" class="status-message"></div>
+            </div>
+
+            <!-- Search Section -->
+            <div class="section">
+                <h2 class="section-title">🔍 Search Documents</h2>
+                <div class="input-group">
+                    <label for="searchKeyword">Search Keyword</label>
+                    <input type="text" id="searchKeyword" class="input-field" 
+                           placeholder="Enter keyword to search..." 
+                           onkeypress="handleSearchKeyPress(event)">
+                </div>
+                <button class="btn" onclick="searchDocuments()">
+                    <span id="searchBtnText">🔍 Search</span>
+                </button>
+                <button class="btn" onclick="loadAllDocuments()" style="margin-left: 12px;">
+                    📋 Load All
+                </button>
+                <div id="searchStatus" class="status-message"></div>
+                <div id="searchResults" class="results-container" style="display: none;">
+                    <div class="empty-state">No results found</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const apiBaseUrl = 'http://localhost:8080';
+        let allDocuments = [];
+
+        // Check API connection on load
+        window.addEventListener('load', checkApiConnection);
+
+        // Utility Functions
+        function showStatus(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status-message ${isError ? 'status-error' : 'status-success'} show`;
+            setTimeout(() => {
+                element.classList.remove('show');
+            }, 3000);
+        }
+
+        function setLoading(textId, isLoading, originalText) {
+            const textElement = document.getElementById(textId);
+            if (isLoading) {
+                textElement.innerHTML = '<span class="loading"></span> Loading...';
+            } else {
+                textElement.textContent = originalText;
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalDocs').textContent = allDocuments.length;
+            const searchResultsCount = document.querySelectorAll('#searchResults .result-item').length;
+            document.getElementById('searchResults').textContent = searchResultsCount;
+        }
+
+        function updateApiStatus(connected) {
+            const statusElement = document.getElementById('apiStatus');
+            if (connected) {
+                statusElement.textContent = '🟢 Connected to API';
+                statusElement.className = 'api-status connected';
+            } else {
+                statusElement.textContent = '🔴 Disconnected from API';
+                statusElement.className = 'api-status disconnected';
+            }
+        }
+
+        // API Functions
+        async function makeApiCall(endpoint, method = 'GET', data = null) {
+            const url = `${apiBaseUrl}${endpoint}`;
+            const config = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            };
+
+            if (data) {
+                config.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(url, config);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('API call failed:', error);
+                throw error;
+            }
+        }
+
+        // Check API Connection
+        async function checkApiConnection() {
+            try {
+                await makeApiCall('/health');
+                updateApiStatus(true);
+                loadAllDocuments();
+            } catch (error) {
+                updateApiStatus(false);
+                console.error('API connection failed:', error);
+            }
+        }
+
+        // Store Document
+        async function storeDocument() {
+            const content = document.getElementById('docContent').value.trim();
+
+            if (!content) {
+                showStatus('storeStatus', 'Please enter document content', true);
+                return;
+            }
+
+            const originalText = document.getElementById('storeBtnText').textContent;
+            setLoading('storeBtnText', true, originalText);
+
+            try {
+                const data = { doc: content };
+                const response = await makeApiCall('/store', 'POST', data);
+                
+                // Clear form
+                document.getElementById('docContent').value = '';
+                
+                showStatus('storeStatus', '✅ Document stored successfully!');
+                loadAllDocuments(); // Refresh the list
+            } catch (error) {
+                showStatus('storeStatus', `❌ Failed to store document: ${error.message}`, true);
+            } finally {
+                setLoading('storeBtnText', false, originalText);
+            }
+        }
+
+        // Search Documents
+        async function searchDocuments() {
+            const keyword = document.getElementById('searchKeyword').value.trim();
+            
+            if (!keyword) {
+                showStatus('searchStatus', 'Please enter a search keyword', true);
+                return;
+            }
+
+            const originalText = document.getElementById('searchBtnText').textContent;
+            setLoading('searchBtnText', true, originalText);
+
+            try {
+                const data = { keyword: keyword };
+                const response = await makeApiCall('/search', 'POST', data);
+                displayResults(response.results || []);
+                showStatus('searchStatus', `✅ Found ${response.results ? response.results.length : 0} result(s)`);
+            } catch (error) {
+                showStatus('searchStatus', `❌ Search failed: ${error.message}`, true);
+                displayResults([]);
+            } finally {
+                setLoading('searchBtnText', false, originalText);
+            }
+        }
+
+        // Load All Documents
+        async function loadAllDocuments() {
+            try {
+                const response = await makeApiCall('/documents');
+                allDocuments = response.documents || [];
+                displayResults(allDocuments);
+                updateStats();
+                updateApiStatus(true);
+            } catch (error) {
+                console.error('Failed to load documents:', error);
+                updateApiStatus(false);
+                displayResults([]);
+            }
+        }
+
+        // Display Results
+        function displayResults(results) {
+            const container = document.getElementById('searchResults');
+            
+            if (results.length === 0) {
+                container.innerHTML = '<div class="empty-state">No documents found</div>';
+            } else {
+                container.innerHTML = results.map((doc, index) => `
+                    <div class="result-item">
+                        <div class="result-content">${escapeHtml(doc.content || doc.doc || doc)}</div>
+                        <div class="result-meta">
+                            <span>Document #${doc.id || index + 1}</span>
+                            ${doc.id ? `<button class="delete-btn" onclick="deleteDocument('${doc.id}')">🗑️ Delete</button>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            container.style.display = 'block';
+            updateStats();
+        }
+
+        // Delete Document
+        async function deleteDocument(id) {
+            if (!confirm('Are you sure you want to delete this document?')) {
+                return;
+            }
+
+            try {
+                await makeApiCall(`/documents/${id}`, 'DELETE');
+                loadAllDocuments();
+                showStatus('searchStatus', '✅ Document deleted successfully!');
+            } catch (error) {
+                showStatus('searchStatus', `❌ Failed to delete document: ${error.message}`, true);
+            }
+        }
+
+        // Handle Enter key in search
+        function handleSearchKeyPress(event) {
+            if (event.key === 'Enter') {
+                searchDocuments();
+            }
+        }
+
+        // Utility function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
