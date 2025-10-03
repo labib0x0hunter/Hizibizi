@@ -1,0 +1,43 @@
+16:17:07.311224 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [S], seq 951057939, win 8760, options [mss 1460,nop,nop,sackOK], length 0
+16:17:08.222534 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [S.], seq 290218379, ack 951057940, win 5840, options [mss 1380,nop,nop,sackOK], length 0
+16:17:08.222534 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 1, win 9660, length 0
+16:17:08.222534 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [P.], seq 1:480, ack 1, win 9660, length 479: HTTP: GET /download.html HTTP/1.1
+16:17:08.783340 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], ack 480, win 6432, length 0
+16:17:08.993643 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], seq 1:1381, ack 480, win 6432, length 1380: HTTP: HTTP/1.1 200 OK
+16:17:09.123830 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 1381, win 9660, length 0
+16:17:09.123830 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], seq 1381:2761, ack 480, win 6432, length 1380: HTTP
+16:17:09.324118 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 2761, win 9660, length 0
+16:17:09.754737 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], seq 2761:4141, ack 480, win 6432, length 1380: HTTP
+16:17:09.864896 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [P.], seq 4141:5521, ack 480, win 6432, length 1380: HTTP
+16:17:09.864896 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 5521, win 9660, length 0
+16:17:09.864896 IP dialin-145-254-160-237.pools.arcor-ip.net.pxc-ntfy > 145.253.2.203.domain: 35+ A? pagead2.googlesyndication.com. (47)
+16:17:09.945011 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], seq 5521:6901, ack 480, win 6432, length 1380: HTTP
+16:17:10.125270 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 6901, win 9660, length 0
+16:17:10.205385 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], seq 6901:8281, ack 480, win 6432, length 1380: HTTP
+16:17:10.225414 IP 145.253.2.203.domain > dialin-145-254-160-237.pools.arcor-ip.net.pxc-ntfy: 35 4/0/0 CNAME pagead2.google.com., CNAME pagead.google.akadns.net., A 216.239.59.104, A 216.239.59.99 (146)
+16:17:10.295515 IP dialin-145-254-160-237.pools.arcor-ip.net.3371 > 216.239.59.99.http: Flags [P.], seq 918691368:918692089, ack 778785668, win 8760, length 721: HTTP: GET /pagead/ads?client=ca-pub-2309191948673629&random=1084443430285&lmt=1082467020&format=468x60_as&output=html&url=http%3A%2F%2Fwww.ethereal.com%2Fdownload.html&color_bg=FFFFFF&color_text=333333&color_link=000000&color_url=666633&color_border=666633 HTTP/1.1
+16:17:10.325558 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 8281, win 9660, length 0
+16:17:10.686076 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], seq 8281:9661, ack 480, win 6432, length 1380: HTTP
+16:17:10.806249 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [P.], seq 9661:11041, ack 480, win 6432, length 1380: HTTP
+16:17:10.806249 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 11041, win 9660, length 0
+16:17:10.946451 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], seq 11041:12421, ack 480, win 6432, length 1380: HTTP
+16:17:10.956465 IP 216.239.59.99.http > dialin-145-254-160-237.pools.arcor-ip.net.3371: Flags [.], ack 721, win 31460, length 0
+16:17:11.126710 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 12421, win 9660, length 0
+16:17:11.226854 IP 216.239.59.99.http > dialin-145-254-160-237.pools.arcor-ip.net.3371: Flags [P.], seq 1:1431, ack 721, win 31460, length 1430: HTTP: HTTP/1.1 200 OK
+16:17:11.266912 IP 216.239.59.99.http > dialin-145-254-160-237.pools.arcor-ip.net.3371: Flags [P.], seq 1431:1591, ack 721, win 31460, length 160: HTTP
+16:17:11.266912 IP dialin-145-254-160-237.pools.arcor-ip.net.3371 > 216.239.59.99.http: Flags [.], ack 1591, win 8760, length 0
+16:17:11.417128 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [P.], seq 12421:13801, ack 480, win 6432, length 1380: HTTP
+16:17:11.527286 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 13801, win 9660, length 0
+16:17:11.537300 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], seq 13801:15181, ack 480, win 6432, length 1380: HTTP
+16:17:11.667488 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], seq 15181:16561, ack 480, win 6432, length 1380: HTTP
+16:17:11.667488 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 16561, win 9660, length 0
+16:17:11.807689 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], seq 16561:17941, ack 480, win 6432, length 1380: HTTP
+16:17:11.807689 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 17941, win 9660, length 0
+16:17:12.088092 IP 216.239.59.99.http > dialin-145-254-160-237.pools.arcor-ip.net.3371: Flags [P.], seq 1:1431, ack 721, win 31460, length 1430: HTTP: HTTP/1.1 200 OK
+16:17:12.088092 IP dialin-145-254-160-237.pools.arcor-ip.net.3371 > 216.239.59.99.http: Flags [.], ack 1591, win 8760, length 0
+16:17:12.158193 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [P.], seq 17941:18365, ack 480, win 6432, length 424: HTTP
+16:17:12.328438 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 18365, win 9236, length 0
+16:17:25.216971 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [F.], seq 18365, ack 480, win 6432, length 0
+16:17:25.216971 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [.], ack 18366, win 9236, length 0
+16:17:37.374452 IP dialin-145-254-160-237.pools.arcor-ip.net.tip2 > 65.208.228.223.http: Flags [F.], seq 480, ack 18366, win 9236, length 0
+16:17:37.704928 IP 65.208.228.223.http > dialin-145-254-160-237.pools.arcor-ip.net.tip2: Flags [.], ack 481, win 6432, length 0
