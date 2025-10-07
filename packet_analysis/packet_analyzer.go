@@ -7,8 +7,8 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"os"
 	"strings"
+	"syscall"
 	"unsafe"
 )
 
@@ -37,7 +37,9 @@ type ethernetHeader struct {
 
 type ipv4Header struct {
 	Version        uint8   // Version -
-	DSCP_ECN       uint8   //
+	HeaderLength   uint8   // Header legnth
+	DSCP           uint8   //
+	ECN            uint8   //
 	TotalLen       uint16  // Total packet length = header + payload, must be big-endian
 	Identification uint16  // Unique id for fragmentation, must be big-endian
 	FlagsFragOff   uint16  // Fragmentation Flags and offset, must be big-endian
@@ -55,243 +57,377 @@ type tcpHeader struct {
 	AckNum     uint32 // Acknowledge number
 	DataOffset uint8  // Dataoffset +
 	Flag       uint16 //  Flag bits
+	HeaderSize uint8  // Header size
 	Window     uint16 // Window size
 	Checksum   uint16 // TCP checksum
 	UrgentPtr  uint16 // Urgent pointer
-	option     []byte
+}
+
+type udpHeader struct {
+	SrcPort  uint16 // Source port
+	DstPort  uint16 // Destination port
+	Length   uint16 // udp header + data
+	Checksum uint16 // checksum
 }
 
 type Packet struct {
-	pcktHdr packetHeader
-	ethrHdr ethernetHeader
-	ipvHdr  ipv4Header
-	tcpHdr  tcpHeader
-	payload []byte
+	pcktHdr    packetHeader   // packet header
+	ethrHdr    ethernetHeader // ether header
+	ipvHdr     ipv4Header     // ipv header
+	protHdr    interface{}    // protocol header
+	payload    []byte         // payload
+	packetNo   int            // packet number
+	payloadLen int            // payload len
 }
 
 const (
 	pcapHeaderSize     = unsafe.Sizeof(pcapHeader{})
 	packetHeaderSize   = unsafe.Sizeof(packetHeader{})
 	ethernetHeaderSize = unsafe.Sizeof(ethernetHeader{})
-	ipv4HeaderSize     = unsafe.Sizeof(ipv4Header{})
-	tcpHeaderSize      = unsafe.Sizeof(tcpHeader{})
+	// ipv4HeaderSize     = unsafe.Sizeof(ipv4Header{})
+	// tcpHeaderSize      = unsafe.Sizeof(tcpHeader{})
+	// udpHeaderSize      = unsafe.Sizeof(udpHeader{})
 )
 
-type File struct {
-	file *os.File
+func Mmap(filename string, length int, prot int, flags int) (data []byte, err error) {
+	fd, err := syscall.Open(filename, syscall.O_RDONLY, 0)
+	if err != nil {
+		return
+	}
+	defer syscall.Close(fd)
+
+	if length == -1 {
+		var info syscall.Stat_t
+		if err = syscall.Fstat(fd, &info); err != nil {
+			return
+		}
+		length = int(info.Size)
+	}
+
+	if length == 0 {
+		err = fmt.Errorf("cannot map zero size")
+		return
+	}
+
+	data, err = syscall.Mmap(
+		fd,
+		0,
+		length,
+		prot,
+		flags,
+	)
+	return
 }
 
-func (f *File) Open(filename string) {
-	fl, err := os.Open(filename)
+func Munmap(data []byte) (err error) {
+	return syscall.Munmap(data)
+}
+
+type File struct {
+	data       []byte
+	readOffset int64
+	res        strings.Builder
+	pcktNum    int
+}
+
+func (f *File) Open(filename string) (err error) {
+	f.data, err = Mmap(filename, -1, syscall.PROT_READ, syscall.MAP_PRIVATE)
 	if err != nil {
-		panic(err)
+		return
 	}
-	f.file = fl
+	f.readOffset = 0
+	f.pcktNum = 1
+	return
 }
 
 func (f *File) Close() {
-	f.file.Close()
+	Munmap(f.data)
+}
+
+func (f *File) ReadPcapHeader() pcapHeader {
+	if f.readOffset+int64(pcapHeaderSize) >= int64(len(f.data)) {
+		// out of index -->>>><<<<-- \\
+	}
+	hdr := *(*pcapHeader)(unsafe.Pointer(&f.data[f.readOffset]))
+	f.readOffset += int64(pcapHeaderSize)
+	if hdr.MagicByte != 2712847316 {
+		// Not pcap file
+	}
+	return hdr
+}
+
+func (f *File) ReadPacketHeader() packetHeader {
+	if f.readOffset+int64(packetHeaderSize) > int64(len(f.data)) {
+		// out of index -->>><<<---
+	}
+	hdr := *(*packetHeader)(unsafe.Pointer(&f.data[f.readOffset]))
+	f.readOffset += int64(packetHeaderSize)
+	return hdr
+}
+
+func (f *File) Analyze() {
+	fmt.Println(f.res.String())
+}
+
+func (f *File) ReadEthernetHeader() ethernetHeader {
+	hdr := *(*ethernetHeader)(unsafe.Pointer(&f.data[f.readOffset]))
+	hdr.EtherType = binary.BigEndian.Uint16(f.data[f.readOffset+12 : f.readOffset+14])
+	f.readOffset += int64(ethernetHeaderSize)
+	return hdr
+}
+
+func (f *File) ReadIpv4Header() ipv4Header {
+	// prevOffset := f.readOffset
+	var hdr ipv4Header
+	versionIHL := *(*uint8)(unsafe.Pointer(&f.data[f.readOffset]))
+	f.readOffset += int64(unsafe.Sizeof(versionIHL))
+	hdr.Version = versionIHL >> 4
+	hdr.HeaderLength = 4 * (versionIHL & ((1 << 4) - 1))
+
+	dscpECN := *(*uint8)(unsafe.Pointer(&f.data[f.readOffset]))
+	f.readOffset += int64(unsafe.Sizeof(dscpECN))
+	hdr.DSCP = dscpECN >> 6
+	hdr.ECN = dscpECN & ((1 << 2) - 1)
+
+	hdr.TotalLen = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += int64(unsafe.Sizeof(hdr.TotalLen))
+
+	hdr.Identification = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += int64(unsafe.Sizeof(hdr.Identification))
+
+	hdr.FlagsFragOff = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += int64(unsafe.Sizeof(hdr.FlagsFragOff))
+
+	hdr.TTL = *(*uint8)(unsafe.Pointer(&f.data[f.readOffset]))
+	f.readOffset += int64(unsafe.Sizeof(hdr.TTL))
+
+	hdr.Protocol = *(*uint8)(unsafe.Pointer(&f.data[f.readOffset]))
+	f.readOffset += int64(unsafe.Sizeof(hdr.Protocol))
+
+	hdr.Checksum = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += int64(unsafe.Sizeof(hdr.Checksum))
+
+	ipSize := unsafe.Sizeof(hdr.SrcIp)
+	copy(hdr.SrcIp[:], f.data[f.readOffset:f.readOffset+int64(ipSize)])
+	f.readOffset += int64(ipSize)
+
+	copy(hdr.DstIp[:], f.data[f.readOffset:f.readOffset+int64(ipSize)])
+	f.readOffset += int64(ipSize)
+
+	// Read option
+	optionLen := hdr.HeaderLength - 20
+	f.readOffset += int64(optionLen)
+
+	return hdr
+}
+
+func (f *File) ReadTCPHeader() tcpHeader {
+	// prevOffset := f.readOffset
+	hdr := tcpHeader{}
+	hdr.SrcPort = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += int64(unsafe.Sizeof(hdr.SrcPort))
+	hdr.DstPort = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += int64(unsafe.Sizeof(hdr.DstPort))
+	hdr.SeqNum = binary.BigEndian.Uint32(f.data[f.readOffset : f.readOffset+4])
+	f.readOffset += int64(unsafe.Sizeof(hdr.SeqNum))
+	hdr.AckNum = binary.BigEndian.Uint32(f.data[f.readOffset : f.readOffset+4])
+	f.readOffset += int64(unsafe.Sizeof(hdr.AckNum))
+	DataOffsetFlag := binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += int64(unsafe.Sizeof(DataOffsetFlag))
+	hdr.DataOffset = uint8(DataOffsetFlag >> 12)
+	hdr.Flag = DataOffsetFlag & ((1 << 9) - 1)
+	hdr.HeaderSize = hdr.DataOffset * 4
+	hdr.Window = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += 2
+	hdr.Checksum = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += 2
+	hdr.UrgentPtr = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += 2
+
+	// Read option
+	optionLen := hdr.HeaderSize - 20
+	f.readOffset += int64(optionLen)
+	return hdr
+}
+
+func (f *File) ReadUDPHeader() udpHeader {
+	var p udpHeader
+	p.SrcPort = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += 2
+	p.DstPort = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += 2
+	p.Length = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += 2
+	p.Checksum = binary.BigEndian.Uint16(f.data[f.readOffset : f.readOffset+2])
+	f.readOffset += 2
+	return p
+}
+
+func (f *File) ReadPayload(n int) (p []byte) {
+	// Read payload
+	// p = f.data[f.readOffset:f.readOffset+int64(n)]
+	f.readOffset += int64(n)
+	// f.res.WriteString(fmt.Sprintf("Payload Length: %d\n", n))
+	// f.res.WriteString("\n\n")
+	return p
 }
 
 func (f *File) ReadPacket() Packet {
 	var p Packet
+	var payloadLen int64
 	p.pcktHdr = f.ReadPacketHeader()
 	p.ethrHdr = f.ReadEthernetHeader()
 	p.ipvHdr = f.ReadIpv4Header()
-	p.tcpHdr = f.ReadTCPHeader()
-	payloadLen := p.ipvHdr.TotalLen - uint16(ipv4HeaderSize) - uint16(p.tcpHdr.DataOffset*4)
-	p.payload = make([]byte, payloadLen)
-	f.file.Read(p.payload)
+	// p.tcpHdr = f.ReadTCPHeader()
+
+	payloadLen = int64(p.ipvHdr.TotalLen) - int64(p.ipvHdr.HeaderLength)
+
+	switch p.ipvHdr.Protocol {
+	case 1:
+		panic("ipvHdrProt")
+	case 2:
+		panic("ipvHdrProt")
+	case 6:
+		p.protHdr = f.ReadTCPHeader()
+		if v, ok := p.protHdr.(tcpHeader); ok {
+			payloadLen -= int64(v.HeaderSize)
+		}
+	case 17:
+		p.protHdr = f.ReadUDPHeader()
+		payloadLen -= int64(8)
+	default:
+	}
+
+	p.payload = f.ReadPayload(int(payloadLen))
+	p.packetNo = f.pcktNum
+	f.pcktNum++
+	p.payloadLen = int(payloadLen)
 	return p
 }
 
-func (f *File) Analyze(p *Packet) {
-	AnalyzePacketHeader(&p.pcktHdr)
-	AnalyzeEthernetHeader(&p.ethrHdr)
-	AnalyzeIpv4Header(&p.ipvHdr)
-	AnalyzeTCPHeader(&p.tcpHdr)
-	// fmt.Println("Payload: " + string(p.payload))
-	fmt.Println("Payload len: ", len(p.payload))
-	fmt.Printf("\n\n\n")
-}
-
-func (f *File) ReadPcapHeader() pcapHeader {
-	buf := make([]byte, pcapHeaderSize)
-	f.file.Read(buf)
-	pcapHdr := *(*pcapHeader)(unsafe.Pointer(&buf[0]))
-	return pcapHdr
-}
-
-func (f *File) ReadPacketHeader() packetHeader {
-	buf1 := make([]byte, packetHeaderSize)
-	f.file.Read(buf1)
-	hdr1 := *(*packetHeader)(unsafe.Pointer(&buf1[0]))
-	return hdr1
-}
-
-func (f *File) ReadEthernetHeader() ethernetHeader {
-	buf2 := make([]byte, ethernetHeaderSize)
-	f.file.Read(buf2)
-	hdr2 := *(*ethernetHeader)(unsafe.Pointer(&buf2[0]))
-	hdr2.EtherType = binary.BigEndian.Uint16(buf2[12:14])
-	return hdr2
-}
-
-func (f *File) ReadIpv4Header() ipv4Header {
-	buf3 := make([]byte, ipv4HeaderSize)
-	f.file.Read(buf3)
-	hd3 := *(*ipv4Header)(unsafe.Pointer(&buf3[0]))
-	hd3.TotalLen = binary.BigEndian.Uint16(buf3[2:4])
-	hd3.Identification = binary.BigEndian.Uint16(buf3[4:6])
-	hd3.FlagsFragOff = binary.BigEndian.Uint16(buf3[6:8])
-	hd3.Checksum = binary.BigEndian.Uint16(buf3[10:12])
-	return hd3
-}
-
-func (f *File) ReadTCPHeader() tcpHeader {
-	buf4 := make([]byte, tcpHeaderSize)
-	f.file.Read(buf4)
-	hd4 := tcpHeader{}
-	hd4.SrcPort = binary.BigEndian.Uint16(buf4[0:2])
-	hd4.DstPort = binary.BigEndian.Uint16(buf4[2:4])
-	hd4.SeqNum = binary.BigEndian.Uint32(buf4[4:8])
-	hd4.AckNum = binary.BigEndian.Uint32(buf4[8:12])
-	DataOffsetFlag := binary.BigEndian.Uint16(buf4[12:14])
-	hd4.DataOffset = uint8(DataOffsetFlag >> 12)
-	hd4.Flag = DataOffsetFlag & ((1 << 9) - 1)
-	hd4.Window = binary.BigEndian.Uint16(buf4[14:16])
-	hd4.Checksum = binary.BigEndian.Uint16(buf4[16:18])
-	hd4.UrgentPtr = binary.BigEndian.Uint16(buf4[18:20])
-
-	if hd4.DataOffset*4 > 20 {
-		hd4.option = make([]byte, hd4.DataOffset*4-20)
-		f.file.Read(hd4.option)
-	}
-
-	return hd4
-}
-
-func AnalyzePcapHeader(hdr *pcapHeader) {
-	var res strings.Builder
-	res.WriteString("::: pcap header :::\n")
-	res.WriteString(fmt.Sprintf("Magic Byte: 0x%x\n", hdr.MagicByte))
-	res.WriteString(fmt.Sprintf("Version   : %d.%d\n", hdr.VersionMajor, hdr.VersionMinor))
-	res.WriteString(fmt.Sprintf("Timezone. : %d\n", hdr.TimeZone))
-	res.WriteString(fmt.Sprintf("Timestamp : %d\n", hdr.TimeStamp))
-	res.WriteString(fmt.Sprintf("Max capture len : %d\n", hdr.SnapLen))
+func (f *File) WritePcapHeader(hdr *pcapHeader) {
+	f.res.WriteString("::: pcap header ::: ")
+	f.res.WriteString(fmt.Sprintf("Version (%d.%d)", hdr.VersionMajor, hdr.VersionMinor))
 	linktype := ""
 	switch hdr.LinkType {
 	case 1:
-		linktype = "1 (Ethernet)"
+		linktype = "Ethernet"
 	default:
 		linktype = "unknown"
 	}
-	res.WriteString("Link type : " + linktype + "\n")
-	fmt.Println(res.String() + "\n")
+	f.res.WriteString(", " + linktype + "\n\n")
 }
 
-func AnalyzePacketHeader(hdr *packetHeader) {
-	var res strings.Builder
-	res.WriteString("::: packet header :::\n")
-	res.WriteString(fmt.Sprintf("Timestamp: %d (second)\n", hdr.TimeStampSecond))
-	res.WriteString(fmt.Sprintf("Timestamp: %d (microsecond)\n", hdr.TimeStampMicroSecond))
-	res.WriteString(fmt.Sprintf("File length: %d bytes\n", hdr.InclLen))
-	res.WriteString(fmt.Sprintf("Packet length: %d bytes\n", hdr.OrigLen))
-	fmt.Println(res.String() + "\n")
-}
+func (f *File) WritePacket(p *Packet) {
+	// packet header
+	f.res.WriteString(fmt.Sprintf("%d |", p.packetNo))
+	f.res.WriteString(fmt.Sprintf(" %d |", p.pcktHdr.TimeStampMicroSecond))
 
-func AnalyzeEthernetHeader(hdr *ethernetHeader) {
-	var res strings.Builder
-	res.WriteString("::: ethernet header :::\n")
-	res.WriteString(fmt.Sprintf("Source Mac : %02x:%02x:%02x:%02x:%02x:%02x\n", hdr.SrcMac[0], hdr.SrcMac[1], hdr.SrcMac[2], hdr.SrcMac[3], hdr.SrcMac[4], hdr.SrcMac[5]))
-	res.WriteString(fmt.Sprintf("Destination Mac : %02x:%02x:%02x:%02x:%02x:%02x\n", hdr.DstMac[0], hdr.DstMac[1], hdr.DstMac[2], hdr.DstMac[3], hdr.DstMac[4], hdr.DstMac[5]))
+	// ether header
 	etherType := ""
-	switch hdr.EtherType {
+	switch p.ethrHdr.EtherType {
 	case 2048:
-		etherType = "2048 (Ipv4)"
+		etherType = "Ipv4"
 	default:
 		etherType = "unknown ether type"
 	}
-	res.WriteString("Ether Type: " + etherType + "\n")
-	fmt.Println(res.String() + "\n")
-}
+	f.res.WriteString(" " + etherType + "::")
 
-func AnalyzeIpv4Header(hdr *ipv4Header) {
-	var res strings.Builder
-	res.WriteString("::: ipv4 header :::\n")
-	// v := hdr.Version >> 4              // left-shift 4bytes (first 4bytes)
-	hl := hdr.Version & ((1 << 4) - 1) // (last 4bytes)
-	res.WriteString(fmt.Sprintf("Header length: %d bytes\n", hl * 4))
-	res.WriteString(fmt.Sprintf("Total packet length: %d bytes\n", hdr.TotalLen))
+	// ipv4 header
 	protocol := ""
-	switch hdr.Protocol {
+	switch p.ipvHdr.Protocol {
+	case 1:
+		protocol = "ICMP"
+	case 2:
+		protocol = "IGMP"
 	case 6:
-		protocol = "6 (tcp)"
+		protocol = "TCP"
+	case 17:
+		protocol = "UDP"
 	default:
-		protocol = "unknown protocol"
+		protocol = fmt.Sprintf("unknown protocol: %d", p.ipvHdr.Protocol)
 	}
-	res.WriteString("Protocol : " + protocol + "\n")
-	res.WriteString(fmt.Sprintf("Source Ip: %d:%d:%d:%d\n", hdr.SrcIp[0], hdr.SrcIp[1], hdr.SrcIp[2], hdr.SrcIp[3]))
-	res.WriteString(fmt.Sprintf("Destination Ip: %d:%d:%d:%d\n", hdr.DstIp[0], hdr.DstIp[1], hdr.DstIp[2], hdr.DstIp[3]))
-	fmt.Println(res.String() + "\n")
+	f.res.WriteString(protocol + " |")
+
+	switch v := p.protHdr.(type) {
+	case tcpHeader:
+		f.res.WriteString(fmt.Sprintf(" %d:%d:%d:%d::%d =>", p.ipvHdr.SrcIp[0], p.ipvHdr.SrcIp[1], p.ipvHdr.SrcIp[2], p.ipvHdr.SrcIp[3], v.SrcPort))
+		f.res.WriteString(fmt.Sprintf(" %d:%d:%d:%d::%d", p.ipvHdr.DstIp[0], p.ipvHdr.DstIp[1], p.ipvHdr.DstIp[2], p.ipvHdr.DstIp[3], v.DstPort))
+
+		// Tcp header
+		f.res.WriteString(fmt.Sprintf(" | Seq %d", v.SeqNum))
+		if v.AckNum > 0 {
+			f.res.WriteString(fmt.Sprintf(" | Ack %d", v.AckNum))
+		}
+		f.res.WriteString(fmt.Sprintf(" | Win %d", v.Window))
+
+		fl := ""
+		for i := 0; i <= 8; i++ {
+			if ((v.Flag >> i) & 1) == 0 {
+				continue
+			}
+			if len(fl) > 0 {
+				fl += "-"
+			}
+			if len(fl) == 0 {
+				fl += "("
+			}
+			switch i {
+			case 0:
+				fl += "FIN"
+			case 1:
+				fl += "SYN"
+			case 2:
+				fl += "RST"
+			case 3:
+				fl += "PSH"
+			case 4:
+				fl += "ACK"
+			case 5:
+				fl += "URG"
+			case 6:
+				fl += "ECE"
+			case 7:
+				fl += "CWR"
+			case 8:
+				fl += "NS"
+			default:
+				fl += "unknown flag"
+			}
+		}
+		fl += ")"
+		f.res.WriteString(" | " + fl)
+
+	case udpHeader:
+		f.res.WriteString(fmt.Sprintf(" %d:%d:%d:%d::%d =>", p.ipvHdr.SrcIp[0], p.ipvHdr.SrcIp[1], p.ipvHdr.SrcIp[2], p.ipvHdr.SrcIp[3], v.SrcPort))
+		f.res.WriteString(fmt.Sprintf(" %d:%d:%d:%d::%d", p.ipvHdr.DstIp[0], p.ipvHdr.DstIp[1], p.ipvHdr.DstIp[2], p.ipvHdr.DstIp[3], v.DstPort))
+	default:
+		// panic("unknown protocol")
+		fmt.Println(v)
+	}
+
+	f.res.WriteString(fmt.Sprintf(" | Len %d", p.payloadLen))
+
+	f.res.WriteString("\n")
 }
 
-func AnalyzeTCPHeader(hdr *tcpHeader) {
-	var res strings.Builder
-	res.WriteString("::: TCP header :::\n")
-	res.WriteString(fmt.Sprintf("Destination port: %d\n", hdr.DstPort))
-	res.WriteString(fmt.Sprintf("Source port: %d\n", hdr.SrcPort))
-	res.WriteString(fmt.Sprintf("Sequence number: %d\n", hdr.SeqNum))
-	res.WriteString(fmt.Sprintf("Window size: %d\n", hdr.Window))
-	res.WriteString(fmt.Sprintf("Dataoffset: %d\n", hdr.DataOffset))
-	res.WriteString(fmt.Sprintf("Header length: %d\n", hdr.DataOffset*4))
-	fl := ""
-	switch hdr.Flag {
-	case 2:
-		fl = "2 (SYN)"
-	case 16:
-		fl = "16 (ACK)"
-	default:
-		fl = "unknown flag"
+func ReadFile(fi *File) {
+	hdr := fi.ReadPcapHeader()
+	fi.WritePcapHeader(&hdr)
+	for fi.readOffset < int64(len(fi.data)) {
+		p := fi.ReadPacket()
+		fi.WritePacket(&p)
 	}
-	res.WriteString("Flag: " + fl + "\n")
-	if hdr.DataOffset*4 > 20 {
-		// fmt.Printf("TCP Options: % X\n", hdr.option)
-	}
-	fmt.Println(res.String() + "\n")
 }
 
 func main() {
 
-	filename := "http.cap"
+	// filename := "http.cap"
+	filename := "dns.cap"
 	var fi File
 	fi.Open(filename)
 	defer fi.Close()
 
-	/* pcap header */
-	pcapHdr := fi.ReadPcapHeader()
-	AnalyzePcapHeader(&pcapHdr)
-
-	pckt := fi.ReadPacket()
-	fi.Analyze(&pckt)
-
-	pckt = fi.ReadPacket()
-	fi.Analyze(&pckt)
-
-	// /* packet header */
-	// pcktHdr := fi.ReadPacketHeader()
-	// AnalyzePacketHeader(&pcktHdr)
-
-	// /* ethernet header */
-	// ethrHdr := fi.ReadEthernetHeader()
-	// AnalyzeEthernetHeader(&ethrHdr)
-
-	// /* Ipv4 header */
-	// ipv4Hdr := fi.ReadIpv4Header()
-	// AnalyzeIpv4Header(&ipv4Hdr)
-
-	// // /* tcp header */
-	// tcpHdr := fi.ReadTCPHeader()
-	// AnalyzeTCPHeader(&tcpHdr)
-
+	ReadFile(&fi)
+	fi.Analyze()
 }
