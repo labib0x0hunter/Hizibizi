@@ -466,6 +466,9 @@ void handle_client(void* arg) {
 	PRINT(request);
 
 	http_request* r = parse_http_request(request);
+    if (r->err == -1) {
+        // request parsing error..
+    }
 	Route* route = find_route(route_storage, r->path, strlen(r->path));
 	if (route == NULL) {
 		route = NOT_FOUND_404;
@@ -513,14 +516,22 @@ void route_registration() {
 bool init_server() {
     shutdown_signal = 0;
 	route_storage = NewNode();  // trie - root
+    if (route_storage == NULL) {
+        perror("trie creation");
+        return false;
+    }
     NOT_FOUND_404 = (Route*) malloc(sizeof(Route));
+    if (NOT_FOUND_404 == NULL) {
+        perror("404-malloc fails");
+        return false;
+    }
     NOT_FOUND_404->method = "GET";
     NOT_FOUND_404->path = "404nf";
     NOT_FOUND_404->func = not_found_404;
     route_registration();
     pool = create_pool(4);
 	if (pool == NULL) {
-		printf("Failed to create pool!\n");
+		perror("Failed to create pool!\n");
 		return false;
 	}
 
@@ -548,12 +559,12 @@ bool init_server() {
 }
 
 void clean_up() {
-    if (!shutdown_signal) {
+    if (!shutdown_signal && server_fd >= 0) {
 		close(server_fd);
 	}
-	destroy_pool(pool, MAX_THREAD_COUNT);
-	freeTrie(route_storage);
-    free(NOT_FOUND_404);
+	if (pool != NULL) destroy_pool(pool, MAX_THREAD_COUNT);
+	if (route_storage != NULL) freeTrie(route_storage);
+    if (NOT_FOUND_404 != NULL) free(NOT_FOUND_404);
 }
 
 int main() {
