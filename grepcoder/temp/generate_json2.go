@@ -534,6 +534,7 @@ var tags = map[string][]string{
 	"bitmask dp":                   {"dp", "bitmask-dp"},
 	"bit dp":                       {"dp", "bitmask-dp"},
 	"tree dp":                      {"dp", "tree-dp"},
+	"insertion dp":					{"dp", "insertion-dp"},
 	"matrix exponent":              {"matrix-expo"},
 	"dp optimizations":             {"dp"},
 	"convex hull trick":            {"dp", "convex-hull"},
@@ -630,6 +631,7 @@ var tags = map[string][]string{
 	"bitwise bruteforcing":         {"bitmask"},
 	"independent bitwise":          {"bitmask"},
 	"bit exhaustive search":        {"bitmask"},
+	"numeric theory transform": 	{"ntt", "math", "adv-dsa"},
 }
 
 type problemModel struct {
