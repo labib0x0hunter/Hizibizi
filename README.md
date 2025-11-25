@@ -13,3 +13,4 @@
 - **request_parser** : http request parser in c.
 - **threadpool** : threadpool in c.
 - **wal** : Write Ahead Log implementataion in go.
+- **fio** : Minimal clone of `fmt.Print()`, `fmt.Scan()`, `bytes.Buffer`, `bufio.NewReader`, `bufio.NewWriter` in go.
