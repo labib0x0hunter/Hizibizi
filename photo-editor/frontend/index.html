@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Photo Editor</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">PhotoStudio</div>
+            <nav class="tools-nav">
+                <button class="tool-btn active" data-tab="adjust">Adjust</button>
+                <button class="tool-btn" data-tab="filters">Filters</button>
+                <button class="tool-btn" data-tab="transform">Transform</button>
+            </nav>
+
+            <div class="tool-panels">
+                <!-- Adjustments Panel -->
+                <div id="adjust-panel" class="panel active">
+                    <div class="control-group">
+                        <label>Brightness</label>
+                        <input type="range" id="brightness" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label>Contrast</label>
+                        <input type="range" id="contrast" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label>Saturation</label>
+                        <input type="range" id="saturation" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label>Sharpness</label>
+                        <input type="range" id="sharpness" min="0" max="100" value="0">
+                    </div>
+                </div>
+
+                <!-- Filters Panel -->
+                <div id="filters-panel" class="panel">
+                    <button class="filter-btn" data-filter="grayscale">Grayscale</button>
+                    <button class="filter-btn" data-filter="sepia">Sepia</button>
+                    <button class="filter-btn" data-filter="negative">Negative</button>
+                    <button class="filter-btn" data-filter="blur">Blur</button>
+                    <button class="filter-btn" data-filter="sobel">Sobel</button>
+                </div>
+
+                <!-- Transform Panel -->
+                <div id="transform-panel" class="panel">
+                    <button class="action-btn" id="rotate-90">Rotate 90°</button>
+                    <button class="action-btn" id="flip-h">Flip Horizontal</button>
+                    <button class="action-btn" id="flip-v">Flip Vertical</button>
+                    <button class="action-btn" id="crop-btn">Crop Mode</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+            <header class="top-bar">
+                <div class="actions">
+                    <label for="file-upload" class="upload-btn">Upload Image</label>
+                    <input type="file" id="file-upload" accept="image/*" hidden>
+                    <button id="reset-btn" class="secondary-btn">Reset</button>
+                </div>
+                <button id="save-btn" class="primary-btn">Download</button>
+            </header>
+
+            <div class="canvas-container">
+                <canvas id="editor-canvas"></canvas>
+                <div id="loading-spinner" class="hidden">Processing...</div>
+            </div>
+        </main>
+    </div>
+    <script src="js/script.js"></script>
+</body>
+
+</html>
